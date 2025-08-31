@@ -17,19 +17,22 @@ export default function Home() {
     fetchAdvocates();
   }, []);
 
-  const fetchAdvocates = async () => {
-    const response = await fetch("/api/advocates");
+  const fetchAdvocates = async (searchTerm?: string) => {
+    const url = `/api/advocates${searchTerm ? `/${searchTerm}` : ''}`;
+    const response = await fetch(url);
     const jsonResponse = await response.json();
     setAdvocates(jsonResponse.data);
   };
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
+    fetchAdvocates(value);
   };
 
   const onReset = () => {
-    console.log('clearing search');
     setSearchTerm('');
+    fetchAdvocates();
   };
 
   return (
