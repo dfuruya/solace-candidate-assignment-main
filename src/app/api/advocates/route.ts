@@ -1,12 +1,19 @@
 import db from "../../../db";
-import { advocates } from "../../../db/schema";
-import { advocateData } from "../../../db/seed/advocates";
+import { Advocate, advocates } from "../../../db/schema";
+// import { advocateData } from "../../../db/seed/advocates";
+
+export type AdvocatesData = {
+  data: Partial<Advocate>[]
+}
 
 export async function GET() {
   // Uncomment this line to use a database
-  // const data = await db.select().from(advocates);
+  const data = await db
+    .select()
+    .from(advocates)
+    .limit(10);
 
-  const data = advocateData;
+  // const data = advocateData;
 
-  return Response.json({ data });
+  return Response.json({ data } satisfies AdvocatesData);
 }

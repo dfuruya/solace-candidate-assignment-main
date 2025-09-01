@@ -1,91 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
+
+import { Advocate } from "@/db/schema";
+import { filterSearch } from "./utils/search";
+import Table from "./components/table";
 
 export default function Home() {
-  const [advocates, setAdvocates] = useState([]);
-  const [filteredAdvocates, setFilteredAdvocates] = useState([]);
+  const [advocates, setAdvocates] = useState<Advocate[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredAdvocates = useMemo(() => filterSearch(searchTerm, advocates), [advocates, searchTerm]);
 
   useEffect(() => {
-    console.log("fetching advocates...");
-    fetch("/api/advocates").then((response) => {
-      response.json().then((jsonResponse) => {
-        setAdvocates(jsonResponse.data);
-        setFilteredAdvocates(jsonResponse.data);
-      });
-    });
+    console.log("loading advocates...");
+    fetchAdvocates();
   }, []);
 
-  const onChange = (e) => {
-    const searchTerm = e.target.value;
-
-    document.getElementById("search-term").innerHTML = searchTerm;
-
-    console.log("filtering advocates...");
-    const filteredAdvocates = advocates.filter((advocate) => {
-      return (
-        advocate.firstName.includes(searchTerm) ||
-        advocate.lastName.includes(searchTerm) ||
-        advocate.city.includes(searchTerm) ||
-        advocate.degree.includes(searchTerm) ||
-        advocate.specialties.includes(searchTerm) ||
-        advocate.yearsOfExperience.includes(searchTerm)
-      );
-    });
-
-    setFilteredAdvocates(filteredAdvocates);
+  const fetchAdvocates = async (searchTerm?: string) => {
+    const url = `/api/advocates${searchTerm ? `/${searchTerm}` : ''}`;
+    const response = await fetch(url);
+    const jsonResponse = await response.json();
+    setAdvocates(jsonResponse.data);
   };
 
-  const onClick = () => {
-    console.log(advocates);
-    setFilteredAdvocates(advocates);
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    fetchAdvocates(value);
+  };
+
+  const onReset = () => {
+    setSearchTerm('');
+    fetchAdvocates();
   };
 
   return (
-    <main style={{ margin: "24px" }}>
-      <h1>Solace Advocates</h1>
-      <br />
-      <br />
-      <div>
-        <p>Search</p>
-        <p>
-          Searching for: <span id="search-term"></span>
-        </p>
-        <input style={{ border: "1px solid black" }} onChange={onChange} />
-        <button onClick={onClick}>Reset Search</button>
+    <main style={{ margin: "24px" }} className="flex flex-col justify-center items-center bg-gray-100 gap-4">
+      <h1 className="text-5xl font-bold">Solace Advocates</h1>
+      <div className="flex w-4xl">
+        <input value={searchTerm} style={{ border: "1px solid black" }} placeholder="Example: 'adhd', 'new york', etc." onChange={onChange} className="block w-full p-4 m-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" />
+        <button onClick={onReset} className="text-white bg-emerald-900 whitespace-nowrap font-medium rounded-lg text-sm p-4 m-2 hover:bg-emerald-800 focus:ring-4 focus:outline-hidden focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800">Reset Search</button>
       </div>
-      <br />
-      <br />
-      <table>
-        <thead>
-          <th>First Name</th>
-          <th>Last Name</th>
-          <th>City</th>
-          <th>Degree</th>
-          <th>Specialties</th>
-          <th>Years of Experience</th>
-          <th>Phone Number</th>
-        </thead>
-        <tbody>
-          {filteredAdvocates.map((advocate) => {
-            return (
-              <tr>
-                <td>{advocate.firstName}</td>
-                <td>{advocate.lastName}</td>
-                <td>{advocate.city}</td>
-                <td>{advocate.degree}</td>
-                <td>
-                  {advocate.specialties.map((s) => (
-                    <div>{s}</div>
-                  ))}
-                </td>
-                <td>{advocate.yearsOfExperience}</td>
-                <td>{advocate.phoneNumber}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Table data={filteredAdvocates} />
+      </Suspense>
     </main>
   );
 }
